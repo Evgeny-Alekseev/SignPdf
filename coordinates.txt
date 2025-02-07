@@ -1,2 +1,2 @@
-TEXT_X_POSITION = 65  # X coordinate for text
-TEXT_Y_POSITION = 680  # Y coordinate for text
+TEXT_X_POSITION = 65 # X coordinate for text (default 65)
+TEXT_Y_POSITION = 680  # Y coordinate for text (default 680)
