@@ -33,39 +33,46 @@ def scan_and_generate_pdf():
     c = canvas.Canvas(output_pdf_path, pagesize=A4)
 
     # Define margins
-    left_margin = 10
+    left_margin = 30
     right_margin = 10
-    top_margin = 10
+    top_margin = 140
     bottom_margin = 20
 
     # Calculate available width and height
     available_width = A4[0] - left_margin - right_margin
     available_height = A4[1] - top_margin - bottom_margin
 
-    # Add filenames to the PDF
+    # Set initial font size
     max_font_size = 12
     min_font_size = 8
-    current_font_size = max_font_size
-    c.setFont('DejaVu', current_font_size)
+    font_size = max_font_size  # Start with the maximum font size
+
+    # Calculate the maximum font size that fits the longest filename
+    column_width = available_width / 4  # Assuming 4 columns
+    for filename in filenames:
+        # Calculate the width of the text
+        text_width = pdfmetrics.stringWidth(filename, 'DejaVu', font_size)
+
+        # Adjust font size if the text exceeds the column width
+        while text_width > (column_width - 20):  # 20 is a margin
+            font_size -= 1  # Decrease font size
+            if font_size < min_font_size:
+                font_size = min_font_size  # Don't go below minimum font size
+                break
+            text_width = pdfmetrics.stringWidth(filename, 'DejaVu', font_size)
+
+    # Set the final font size for the canvas
+    c.setFont('DejaVu', font_size)
 
     y_position = A4[1] - top_margin  # Start from the top margin
     column_count = 0
     max_columns = 4
     max_lines_per_column = 40  # Maximum lines per column
     line_count = 0  # Initialize line count
-    column_width = available_width / max_columns  # Calculate column width based on available width
 
     for filename in filenames:
         # Calculate the width of the text
-        text_width = pdfmetrics.stringWidth(filename, 'DejaVu', current_font_size)
-
-        # Check if the text exceeds the column width
-        while text_width > (column_width - 20):  # 20 is a margin
-            current_font_size -= 1  # Decrease font size
-            if current_font_size < min_font_size:
-                break  # Don't go below minimum font size
-            c.setFont('DejaVu', current_font_size)
-            text_width = pdfmetrics.stringWidth(filename, 'DejaVu', current_font_size)
+        text_width = pdfmetrics.stringWidth(filename, 'DejaVu', font_size)
 
         # Draw the string only if it fits
         if text_width <= (column_width - 20):  # Ensure it fits within the column width
@@ -79,17 +86,13 @@ def scan_and_generate_pdf():
                     # Move to the next column
                     y_position = A4[1] - top_margin  # Reset y_position to the top margin
                     line_count = 0  # Reset line count for the new column
-                    current_font_size = max_font_size  # Reset font size for the new column
-                    c.setFont('DejaVu', current_font_size)  # Reset font size
                 else:
                     # Reset for a new page
                     c.showPage()
-                    c.setFont('DejaVu', 12)
+                    c.setFont('DejaVu', font_size)  # Use the same font size for the new page
                     column_count = 0
                     y_position = A4[1] - top_margin  # Reset y_position for the new page
                     line_count = 0  # Reset line count for the new page
-                    current_font_size = max_font_size  # Reset font size for the new page
-                    c.setFont('DejaVu', current_font_size)  # Reset font size
         else:
             print(f"Warning: '{filename}' exceeds the width limit and will not be printed.")
 
@@ -97,6 +100,5 @@ def scan_and_generate_pdf():
     c.save()
 
     print(f"PDF file created: {output_pdf_path}")
-
 
 scan_and_generate_pdf()
