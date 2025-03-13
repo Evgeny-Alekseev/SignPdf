@@ -35,7 +35,7 @@ def scan_and_generate_pdf():
     # Define margins
     left_margin = 30
     right_margin = 10
-    top_margin = 140
+    top_margin = 40
     bottom_margin = 20
 
     # Calculate available width and height
@@ -74,25 +74,26 @@ def scan_and_generate_pdf():
         # Calculate the width of the text
         text_width = pdfmetrics.stringWidth(filename, 'DejaVu', font_size)
 
+        # Check if the y_position is above the bottom margin before drawing
+        if y_position - 20 < bottom_margin:  # 20 is the height of each line
+            column_count += 1
+            if column_count < max_columns:
+                # Move to the next column
+                y_position = A4[1] - top_margin  # Reset y_position to the top margin
+                line_count = 0  # Reset line count for the new column
+            else:
+                # Reset for a new page
+                c.showPage()
+                c.setFont('DejaVu', font_size)  # Use the same font size for the new page
+                column_count = 0
+                y_position = A4[1] - top_margin  # Reset y_position for the new page
+                line_count = 0  # Reset line count for the new page
+
         # Draw the string only if it fits
         if text_width <= (column_width - 20):  # Ensure it fits within the column width
             c.drawString(left_margin + (column_count * column_width), y_position, filename)
             y_position -= 20
             line_count += 1  # Increment line count
-
-            if line_count >= max_lines_per_column:  # Check for line overflow
-                column_count += 1
-                if column_count < max_columns:
-                    # Move to the next column
-                    y_position = A4[1] - top_margin  # Reset y_position to the top margin
-                    line_count = 0  # Reset line count for the new column
-                else:
-                    # Reset for a new page
-                    c.showPage()
-                    c.setFont('DejaVu', font_size)  # Use the same font size for the new page
-                    column_count = 0
-                    y_position = A4[1] - top_margin  # Reset y_position for the new page
-                    line_count = 0  # Reset line count for the new page
         else:
             print(f"Warning: '{filename}' exceeds the width limit and will not be printed.")
 
