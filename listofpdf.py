@@ -22,15 +22,16 @@ def scan_and_generate_pdf():
     output_pdf_path = os.path.join(output_dir, 'file_list.pdf')
     c = canvas.Canvas(output_pdf_path, pagesize=A4)
 
-    left_margin, right_margin, top_margin, bottom_margin = 30, 100, 40, 20
+    left_margin, right_margin, top_margin, bottom_margin = 30, 10, 40, 20
     available_width = A4[0] - left_margin - right_margin
     available_height = A4[1] - top_margin - bottom_margin
-    max_font_size, min_font_size = 14, 8
-
+    max_font_size, min_font_size = 20, 8
+    max_columns = 4
+    
     column_count = 1
     optimal_font_size = max_font_size
 
-    while True:
+    while column_count <= max_columns:
         column_width = available_width / column_count
         font_size = max_font_size
 
@@ -40,8 +41,9 @@ def scan_and_generate_pdf():
                 font_size -= 1
                 text_width = pdfmetrics.stringWidth(filename, 'DejaVu', font_size)
         
-        lines_per_column = available_height // (font_size + 4)
-        required_columns = -(-len(filenames) // lines_per_column)  # Ceiling division
+        line_height = font_size + 4
+        max_lines = (available_height // line_height)
+        required_columns = -(-len(filenames) // max_lines)
         
         if required_columns <= column_count:
             optimal_font_size = font_size
@@ -52,16 +54,23 @@ def scan_and_generate_pdf():
     c.setFont('DejaVu', optimal_font_size)
     y_position = A4[1] - top_margin
     line_count, col = 0, 0
+    line_height = optimal_font_size + 4
 
     for filename in filenames:
-        if line_count >= lines_per_column:
+        if y_position - line_height < bottom_margin:
             col += 1
             line_count = 0
             y_position = A4[1] - top_margin
 
-        x_position = left_margin + col * column_width
+            if col >= column_count:
+                c.showPage()
+                c.setFont('DejaVu', optimal_font_size)
+                col = 0
+                y_position = A4[1] - top_margin
+
+        x_position = left_margin + col * (available_width / column_count)
         c.drawString(x_position, y_position, filename)
-        y_position -= (optimal_font_size + 4)
+        y_position -= line_height
         line_count += 1
 
     c.save()
