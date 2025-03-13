@@ -36,13 +36,26 @@ def scan_and_generate_pdf():
     c.setFont('DejaVu', 12)
 
     y_position = 800
+    column_count = 0
+    max_columns = 3
+    x_position = 100  # Starting x position for the first column
+
     for filename in filenames:
-        c.drawString(100, y_position, filename)
+        c.drawString(x_position, y_position, filename)
         y_position -= 20
-        if y_position < 50:  # Check for page overflow
-            c.showPage()
-            c.setFont('DejaVu', 12)
-            y_position = 800
+        if y_position < 50:  # Check for column overflow
+            column_count += 1
+            if column_count < max_columns:
+                # Move to the next column
+                y_position = 800
+                x_position += 200  # Adjust this value based on your layout
+            else:
+                # Reset for a new page
+                c.showPage()
+                c.setFont('DejaVu', 12)
+                column_count = 0
+                x_position = 100  # Reset x position for the new page
+                y_position = 800
 
     # Save the PDF
     c.save()
