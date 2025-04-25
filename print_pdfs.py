@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import math
 import fitz  # PyMuPDF
+import shutil  # Added for file operations
 
 def arrange_pages_two_up(input_pages, output_path):
     """Arrange pages two per page in album layout"""
@@ -163,8 +164,24 @@ def process_pdf_group(pdf_files, group_number):
             doc.close()
 
 def main():
-    # Create input directory if it doesn't exist
+    # Create directories if they don't exist
     Path('in').mkdir(exist_ok=True)
+    Path('out').mkdir(exist_ok=True)
+    
+    # First, remove all files in the 'in' directory
+    for file in os.listdir('in'):
+        file_path = os.path.join('in', file)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+            print(f"Removed {file_path}")
+    
+    # Copy all PDFs from 'out' to 'in'
+    out_pdfs = [f for f in os.listdir('out') if f.lower().endswith('.pdf')]
+    for pdf in out_pdfs:
+        source_path = os.path.join('out', pdf)
+        target_path = os.path.join('in', pdf)
+        shutil.move(source_path, target_path)
+        print(f"Moved {source_path} to {target_path}")
     
     # Get all PDF files from the input directory
     pdf_files = [f for f in os.listdir('in') if f.lower().endswith('.pdf')]
