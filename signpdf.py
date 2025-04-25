@@ -7,6 +7,8 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 import pdfplumber  # Import pdfplumber for better text extraction
+import re
+from collections import defaultdict
 
 # Default configuration for text positioning
 DEFAULT_TEXT_X_POSITION = 65  # X coordinate for text
@@ -146,8 +148,14 @@ for filename in os.listdir(input_dir):
     if filename.endswith(".pdf"):
         input_path = os.path.join(input_dir, filename)
         output_path = os.path.join(output_dir, filename.replace(".pdf", "-sgn.pdf"))
-        text = os.path.splitext(filename)[0]
-        text = text.split('_', 1)[0]  # Split by the first underscore and keep the first part
+        
+        # Extract text from the filename - moved to function to ensure consistency
+        def extract_text_from_filename(filename):
+            text = os.path.splitext(filename)[0]
+            text = text.split('_', 1)[0]  # Split by the first underscore and keep the first part
+            return text
+                
+        text = extract_text_from_filename(filename)
         
         # If the special global variable is set, find the Y position
         if CALCULATE_POSITION:
@@ -155,6 +163,38 @@ for filename in os.listdir(input_dir):
             if positions:  # Only update if any positions were found
                 # Set TEXT_Y_POSITION to the Y position of the first occurrence
                 TEXT_Y_POSITION = positions[0][1]
+                # Get the page height using pdfplumber
+                with pdfplumber.open(input_path) as pdf:
+                    page_height = pdf.pages[0].height
+                # Check if TEXT_Y_POSITION is in the first third of the page (from the top)
+                # Remember: y=0 is at the bottom, so first third is y > 2/3*page_height
+                if TEXT_Y_POSITION <= (2 * page_height / 3):
+                    # Try to find 'Тест Начат' and place imprint above that line
+                    with pdfplumber.open(input_path) as pdf:
+                        first_page = pdf.pages[0]
+                        words = first_page.extract_words()
+                        found_test_line = False
+                        # Join all words with their delimiters to reconstruct the line
+                        line_texts = []
+                        for word in words:
+                            line_texts.append((word['text'], word['top']))
+                        # Group by 'top' to reconstruct lines
+                        lines_by_top = defaultdict(list)
+                        for word_text, top in line_texts:
+                            lines_by_top[top].append(word_text)
+                        # Now check each line for the pattern
+                        pattern = re.compile(r'тест[\W_]*начат', re.IGNORECASE)
+                        for top, texts in lines_by_top.items():
+                            line = ' '.join(texts)
+                            if pattern.search(line):
+                                # Place imprint just above this line (10 units above its top)
+                                TEXT_Y_POSITION = page_height - (top - 22)
+                                found_test_line = True
+                                break
+                        if not found_test_line:
+                            print(f"SKIP {filename} - no suitable position")
+                            shutil.copy(input_path, output_path)
+                            continue  # Skip to the next file
             else:
                 # If no positions were found, save the original file in the output directory
                 print(f"No occurrences of 'quiz/review' found in {filename}. Saving original file.")
