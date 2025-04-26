@@ -191,8 +191,20 @@ for filename in os.listdir(input_dir):
                                 TEXT_Y_POSITION = page_height - (top - 22)
                                 found_test_line = True
                                 break
+                        
+                        # Try to find 'Вопрос 1' if 'тест начат' was not found
                         if not found_test_line:
-                            print(f"SKIP {filename} - no suitable position")
+                            question_pattern = re.compile(r'вопрос[\W_]*1', re.IGNORECASE)
+                            for top, texts in lines_by_top.items():
+                                line = ' '.join(texts)
+                                if question_pattern.search(line):
+                                    # Place imprint just above this line (similar to test начат placement)
+                                    TEXT_Y_POSITION = page_height - (top - 22)
+                                    found_test_line = True
+                                    break
+                            
+                        if not found_test_line:
+                            print(f"SKIP {filename} - no suitable position (neither 'тест начат' nor 'Вопрос 1' found)")
                             shutil.copy(input_path, output_path)
                             continue  # Skip to the next file
             else:
