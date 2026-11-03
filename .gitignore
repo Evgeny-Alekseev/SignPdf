@@ -5,5 +5,9 @@ venv/
 .env
 .idea/
 *.log
-out/
-in/
+# Папки in/ и out/ хранятся в репозитории пустыми:
+# их содержимое (PDF-файлы) игнорируется.
+in/*
+!in/.gitkeep
+out/*
+!out/.gitkeep
